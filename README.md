@@ -19,3 +19,15 @@ Nút **Xuất báo cáo tất cả CSGD** tạo file `Bao_cao_XLDV_2026_TAT_CA_C
 
 ### Nguyên tắc dữ liệu
 Bộ lọc Dashboard chỉ phục vụ xem/tra cứu. Báo cáo tổng hợp chính thức của ĐHNN lấy toàn bộ dữ liệu mà tài khoản có quyền xem, để tránh tình trạng xuất báo cáo bị thiếu trường do người dùng đang lọc một CSGD.
+
+## Trung tâm xử lý nghiệp vụ – Cần xử lý
+- Hệ thống tự phát hiện hồ sơ thiếu/xung đột dựa trên dữ liệu đã nhập.
+- ĐHNN (ADMIN) mở từng hồ sơ, xem PA2/PA3/mức cuối và ghi nội dung xác minh.
+- Có thể chuyển hồ sơ `OPEN` → `DONE` hoặc mở lại `DONE` → `OPEN`.
+- Lưu người xử lý, thời điểm xử lý, ghi chú xử lý và Audit Log.
+- Bộ lọc theo MSSV/họ tên/ngành, CSGD, loại cảnh báo và trạng thái.
+- Sau khi xử lý, Dashboard và báo cáo tự cập nhật; không cần nhập lại file đối soát/cần xử lý.
+- Khi nhập lại Excel, các hồ sơ được cập nhật sẽ mở lại trạng thái xử lý để tránh bỏ sót thay đổi nguồn.
+
+### Migration mới
+Sau khi deploy phiên bản này, chạy `migrations/0002_processing.sql` một lần trên D1 `xldv` để thêm các trường trạng thái xử lý.

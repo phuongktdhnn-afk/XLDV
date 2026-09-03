@@ -1,35 +1,26 @@
-# XLDV 2026 - Free Long-Term Edition
+# XLDV 2026 – Dashboard ĐHNN (Cloudflare Pages + D1)
 
-Bản triển khai ưu tiên miễn phí lâu dài: Cloudflare Pages + Pages Functions + D1.
-Không dùng Render PostgreSQL Free và không lưu database trên filesystem.
+Phiên bản cập nhật theo quy trình phối hợp: **ĐHNN là đầu mối duy nhất quản lý và cập nhật Dashboard**. Các CSĐT cung cấp/xác nhận dữ liệu qua biểu mẫu; không sửa trực tiếp Dashboard.
 
-## Chạy local
-Cần Node.js và Wrangler:
+## Quyền
+- ADMIN/ĐHNN: quản trị, nhập Excel, cập nhật dữ liệu, đối soát, xuất báo cáo.
+- BGH: xem tổng hợp và tra log.
+- CSGD: xem dữ liệu theo phạm vi trường; không có quyền cập nhật.
 
-```bash
-npm install
-npx wrangler pages dev public --d1=XLDV_DB
-```
+## Lưu ý dữ liệu
+- MSSV là khóa đối soát chính.
+- PA1 = chứng chỉ; PA2 = điểm THPT; PA3 = kiểm tra xếp lớp.
+- Sheet `KQ_PA1` trong file cũ được xử lý như nguồn **PA3 legacy** để tương thích dữ liệu cũ; trường `pa3_source` ghi rõ nguồn.
+- Import Excel dùng UPSERT theo MSSV, không xóa toàn bộ dữ liệu hiện có.
 
-## Deploy Cloudflare Pages
-1. Đưa toàn bộ thư mục lên GitHub.
-2. Cloudflare Dashboard -> Workers & Pages -> Create -> Pages -> Connect to Git.
-3. Build command: `exit 0`
-4. Output directory: `public`
-5. Tạo D1 database tên `XLDV_DB`.
-6. Chạy migration trong `migrations/0001_init.sql`.
-7. Trong Pages project, Settings -> Functions -> D1 database bindings, binding name `XLDV_DB`.
-8. Deploy lại.
+## Triển khai
+1. Dùng Cloudflare Pages + Functions.
+2. Binding D1: `XLDV_DB` → database `xldv`.
+3. `wrangler.toml` phải chứa Database ID thật.
+4. Migration `migrations/0001_init.sql` đã tạo các bảng users, students, audit_log, sessions.
 
-## Lưu ý về miễn phí
-Không có nhà cung cấp nào cam kết dịch vụ Internet miễn phí vĩnh viễn. Bản này loại bỏ Render PostgreSQL Free 30 ngày và dùng D1/Pages theo hạn mức Free hiện hành; hạn mức/chính sách có thể thay đổi.
-
-## Tài khoản demo
-- admin / admin123
-- bgh / bgh123
-- dhspkt / dhspkt123
-
-Đổi mật khẩu trước khi dùng thật.
-
-## Excel
-Excel được đọc ở trình duyệt bằng SheetJS CDN, sau đó gửi dữ liệu vào D1. Sheet nguồn: NHAP_DANH_SACH và KQ_PA1. Theo bộ dữ liệu hiện tại, KQ_PA1 được ánh xạ tạm sang PA3 do tên sheet/ý nghĩa văn bản chưa thống nhất. PA1 chứng chỉ cần chốt schema chính thức trước khi tự động hóa.
+## Dashboard cập nhật
+- Bỏ nhãn “realtime” không đúng với bản Pages/D1 hiện tại.
+- Thêm trạng thái “Chỉ ĐHNN cập nhật Dashboard”.
+- Thêm tiến độ theo CSĐT.
+- Thêm thông tin quy tắc báo cáo 05 ngày sau khi có kết quả kiểm tra.

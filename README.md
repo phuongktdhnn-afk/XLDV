@@ -32,3 +32,13 @@ Phiên bản cập nhật theo quy trình phối hợp: **ĐHNN là đầu mối
 - Biểu đồ: phân lớp cuối cùng, phương án sử dụng, kết quả PA3, phân bố điểm PA3 và so sánh quy mô theo CSGD.
 - Xuất báo cáo Excel theo đúng bộ lọc hiện tại, gồm các sheet Tổng hợp, Theo CSGD và Chi tiết.
 - Xuất CSV vẫn được giữ để xử lý dữ liệu nhanh.
+
+
+## Tự động hóa giảm thao tác thủ công
+- Sau khi ĐHNN nhập Excel, hệ thống tự tính PA2/PA3 theo ngưỡng cấu hình từ quy trình hiện tại.
+- Tự xác định mức cao nhất trong các phương án có dữ liệu.
+- Tự phát hiện các trường hợp cần xác minh: thiếu dữ liệu PA2/PA3, đăng ký PA1 nhưng chưa có kết quả/chứng chỉ PA1 được xác minh, thiếu thông tin cơ bản, hoặc kết quả các phương án khác mức.
+- Có tab **Cần xử lý** và nút xuất `XLDV_2026_CAN_XU_LY.xlsx`.
+- Có nút xuất `XLDV_2026_DOI_SOAT.xlsx` và báo cáo tổng hợp.
+- Các trường CSĐT không trực tiếp sửa Dashboard; ĐHNN là đơn vị cập nhật.
+- PA1 chứng chỉ chưa được tự động hóa đầy đủ vì workbook hiện tại chưa có sheet dữ liệu PA1 chuyên biệt; không tự suy diễn dữ liệu PA1 từ các trường khác.

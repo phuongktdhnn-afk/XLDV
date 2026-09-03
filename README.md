@@ -24,3 +24,11 @@ Phiên bản cập nhật theo quy trình phối hợp: **ĐHNN là đầu mối
 - Thêm trạng thái “Chỉ ĐHNN cập nhật Dashboard”.
 - Thêm tiến độ theo CSĐT.
 - Thêm thông tin quy tắc báo cáo 05 ngày sau khi có kết quả kiểm tra.
+
+
+## Bản giao diện nâng cấp
+- Giao diện Dashboard được làm lại theo phong cách quản trị dữ liệu hiện đại, responsive.
+- Khu vực KPI, bộ lọc, phân tích kết quả, tiến độ CSGD và bảng chi tiết được phân cấp rõ ràng.
+- Biểu đồ: phân lớp cuối cùng, phương án sử dụng, kết quả PA3, phân bố điểm PA3 và so sánh quy mô theo CSGD.
+- Xuất báo cáo Excel theo đúng bộ lọc hiện tại, gồm các sheet Tổng hợp, Theo CSGD và Chi tiết.
+- Xuất CSV vẫn được giữ để xử lý dữ liệu nhanh.

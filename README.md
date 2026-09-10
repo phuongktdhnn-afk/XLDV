@@ -60,3 +60,13 @@ Dashboard đã bổ sung:
 Sau khi cập nhật repository GitHub, Cloudflare Pages sẽ tự build/deploy nếu project đang dùng Git integration.
 
 > Lưu ý: bản FreeLongTerm dùng SheetJS phía trình duyệt để đọc Excel; D1/Pages Functions lưu dữ liệu. `DOI_SOAT` và `CAN_XU_LY` trong file xuất là kết quả tự sinh từ Dashboard.
+
+
+## 7. Khắc phục nhập Excel – bản 2026-09-10
+Bản này hỗ trợ:
+- Mẫu 2 sheet cũ: `DANH_SACH_SINH_VIEN` + `KET_QUA_THI_XLDV`.
+- Mẫu 3 sheet mới: `NHAP_DANH_SACH` + `KQ_PA1` + `KQ_PA3`.
+- Tự tìm dòng tiêu đề có `MSSV/Mã SV`, kể cả mẫu 2 sheet có 3 dòng hướng dẫn phía trên.
+- Tự ghép PA1/PA3 theo MSSV.
+- Hỗ trợ `.xlsx` và `.xls`.
+- API chia dữ liệu nhập thành các batch nhỏ trước khi ghi D1 để ổn định với danh sách lớn.

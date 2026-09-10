@@ -99,6 +99,104 @@ async function exportReport(){
  }catch(e){toast(e.message)}
 }
 async function doExport(){try{const rows=await getReportRows();const cols=['mssv','full_name','school','cohort','major','pa1_level','pa2_score','pa2_level','pa3_score','pa3_level','best_level','method','status','alerts'];const csv=[cols.join(','),...rows.map(r=>cols.map(k=>'"'+String(Array.isArray(r[k])?r[k].join('; '):r[k]??'').replaceAll('"','""')+'"').join(','))].join('\n');downloadBlob(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),'bao_cao_xldv_2026.csv');toast('Đã xuất báo cáo CSV')}catch(e){toast(e.message)}}
-function importExcel(){const i=document.createElement('input');i.type='file';i.accept='.xlsx';i.onchange=async()=>{try{if(!window.XLSX)throw Error('Chưa tải thư viện Excel');const file=i.files[0];if(!file)return;const data=await file.arrayBuffer();const wb=XLSX.read(data);const ws=wb.Sheets['DANH_SACH_SINH_VIEN'];const wr=wb.Sheets['KET_QUA_THI_XLDV'];if(!ws)throw Error('Thiếu sheet DANH_SACH_SINH_VIEN');if(!wr)throw Error('Thiếu sheet KET_QUA_THI_XLDV');const base=XLSX.utils.sheet_to_json(ws,{defval:''});const result=XLSX.utils.sheet_to_json(wr,{defval:''});const testMap={};for(const r of result){const m=String(r['Mã SV']??r.MSSV??'').trim();if(m)testMap[m]=r;}const rows=base.map(r=>{const m=String(r['Mã SV']??r.MSSV??'').trim(),t=testMap[m]||{};return {mssv:m,full_name:r['Họ và tên']||'',school:r['Trường']||'',cohort:r['Khóa']||'',class_name:r['Lớp']||t['Lớp']||'',major:r['Ngành học']||'',certificate:r['Chứng chỉ']||'',pa1_score:'',pa1_level:'',pa1_valid:false,pa2_score:r['Điểm THPT']??'',pa3_score:t['Điểm thi XLĐV']??'',registration_pa1:'',registration_pa3:(t['Điểm thi XLĐV']??'')!==''?'Có':'',note:t['Ghi chú']||'',pa3_source:'KET_QUA_THI_XLDV'};}).filter(r=>r.mssv);const resp=await api('/api/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows})});const d=await resp.json();if(!resp.ok)throw Error(d.error);toast(`Đã nhập ${d.rows} sinh viên từ 2 sheet · hệ thống tự đối soát${d.duplicates?.length?` · ${d.duplicates.length} MSSV trùng`:''}`);reload()}catch(e){toast(e.message)}};i.click()}
+function importExcel(){
+ const i=document.createElement('input');
+ i.type='file';
+ i.accept='.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel';
+ i.onchange=async()=>{
+  try{
+   if(!window.XLSX)throw Error('Chưa tải thư viện Excel. Hãy tải lại trang rồi thử lại.');
+   const file=i.files?.[0]; if(!file)return;
+   const data=await file.arrayBuffer();
+   const wb=XLSX.read(data,{cellDates:true});
+
+   const findSheet=(names)=>names.map(n=>wb.Sheets[n]).find(Boolean);
+   const headerIndex=(ws)=>{
+    const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:false});
+    for(let idx=0;idx<Math.min(raw.length,30);idx++){
+     const cells=raw[idx].map(v=>String(v??'').trim().toLowerCase());
+     if(cells.some(v=>['mssv','mã sv','ma sv'].includes(v)))return idx;
+    }
+    return -1;
+   };
+   const readSheet=(ws,label)=>{
+    if(!ws)throw Error(`Không tìm thấy sheet ${label}`);
+    const h=headerIndex(ws);
+    if(h<0)throw Error(`Không tìm thấy dòng tiêu đề (MSSV/Mã SV) trong sheet ${label}`);
+    return XLSX.utils.sheet_to_json(ws,{defval:'',range:h,blankrows:false});
+   };
+   const val=v=>v!==null&&v!==undefined&&String(v).trim()!=='';
+   const first=(r,keys)=>{for(const k of keys)if(val(r[k]))return r[k];return ''};
+
+   // Hỗ trợ cả mẫu 2 sheet cũ và mẫu 3 sheet mới.
+   const baseWs=findSheet(['NHAP_DANH_SACH','DANH_SACH_SINH_VIEN']);
+   if(!baseWs)throw Error('Không tìm thấy sheet danh sách sinh viên. Cần NHAP_DANH_SACH hoặc DANH_SACH_SINH_VIEN.');
+   const base=readSheet(baseWs,wb.SheetNames.find(n=>wb.Sheets[n]===baseWs)||'danh sách');
+
+   let pa1Rows=[],pa3Rows=[],pa1Label='',pa3Label='';
+   const pa1Ws=findSheet(['KQ_PA1']);
+   const pa3Ws=findSheet(['KQ_PA3']);
+   const legacyWs=findSheet(['KET_QUA_THI_XLDV']);
+
+   if(pa1Ws){
+    const rows=readSheet(pa1Ws,'KQ_PA1');
+    const sample=rows[0]||{};
+    const isPa1=Object.keys(sample).some(k=>/điểm pa1|mức xlđv pa1/i.test(k));
+    if(isPa1){pa1Rows=rows;pa1Label='KQ_PA1';}
+    else if(!pa3Ws){pa3Rows=rows;pa3Label='KQ_PA1';}
+   }
+   if(pa3Ws){pa3Rows=readSheet(pa3Ws,'KQ_PA3');pa3Label='KQ_PA3';}
+   else if(legacyWs){pa3Rows=readSheet(legacyWs,'KET_QUA_THI_XLDV');pa3Label='KET_QUA_THI_XLDV';}
+
+   const keyOf=r=>String(first(r,['MSSV','Mã SV','Ma SV'])).trim();
+   const mapRows=rows=>{
+    const m=new Map();
+    for(const r of rows){const k=keyOf(r);if(k)m.set(k,r);}
+    return m;
+   };
+   const pa1Map=mapRows(pa1Rows),pa3Map=mapRows(pa3Rows);
+
+   const rows=base.map(r=>{
+    const m=keyOf(r); if(!m)return null;
+    const p1=pa1Map.get(m)||{},p3=pa3Map.get(m)||{};
+    const pa1Score=first(p1,['Điểm PA1','Điểm chứng chỉ','PA1']);
+    const pa1Level=first(p1,['Mức XLĐV PA1','Mức PA1','Mức XLĐV']);
+    const pa3Score=first(p3,['Điểm PA3','Điểm thi XLĐV','Điểm XLĐV']);
+    const pa3Level=first(p3,['Mức XLĐV PA3','Mức PA3','Mức XLĐV']);
+    const cert=first(p1,['Loại chứng chỉ','Chứng chỉ'])||first(r,['Chứng chỉ']);
+    return {
+     mssv:m,
+     full_name:first(r,['Họ và tên','Họ tên']),
+     school:first(r,['CSGDĐHTV','Trường','CSGD']),
+     cohort:first(r,['Khóa','Khoa']),
+     class_name:first(r,['Lớp'])||first(p3,['Lớp']),
+     major:first(r,['Ngành','Ngành học']),
+     certificate:cert,
+     pa1_score:val(pa1Score)?Number(pa1Score):null,
+     pa1_level:pa1Level||'',
+     pa1_valid:!!pa1Level || /hợp lệ/i.test(String(first(p1,['Trạng thái']))),
+     pa2_score:first(r,['Điểm THPT']),
+     pa3_score:val(pa3Score)?Number(pa3Score):null,
+     registration_pa1:first(r,['Đăng ký PA1']),
+     registration_pa3:first(r,['Đăng ký PA3']) || (val(pa3Score)?'Có':''),
+     note:first(r,['Ghi chú'])||first(p3,['Ghi chú'])||first(p1,['Ghi chú']),
+     pa3_source:pa3Label||'KQ_PA3'
+    };
+   }).filter(Boolean);
+
+   if(!rows.length)throw Error('Không tìm thấy sinh viên hợp lệ trong sheet danh sách. Kiểm tra cột MSSV/Mã SV.');
+   const hasAnyResult=rows.some(r=>val(r.pa1_level)||val(r.pa1_score)||val(r.pa3_score)||val(r.certificate)||val(r.pa2_score));
+   if(!hasAnyResult)toast('Đã đọc danh sách nhưng chưa thấy kết quả PA1/PA2/PA3; hệ thống vẫn sẽ nhập dữ liệu để đối soát.');
+
+   toast(`Đang nhập ${rows.length.toLocaleString('vi-VN')} sinh viên...`);
+   const resp=await api('/api/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows})});
+   const d=await resp.json();
+   if(!resp.ok)throw Error(d.error||'Không thể nhập dữ liệu');
+   toast(`Đã nhập ${d.rows.toLocaleString('vi-VN')} sinh viên${d.duplicates?.length?` · ${d.duplicates.length} MSSV trùng`:''}`);
+   reload();
+  }catch(e){console.error(e);toast(e.message||'Không thể đọc file Excel')}
+ };
+ i.click();
+}
 async function logout(){try{await api('/api/logout',{method:'POST'})}catch{}me=null;renderLogin()}function openEvents(){}boot();
 </script></body></html>
